@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jump & Run</title>
+    <style>
+        * { margin: 0; padding: 0; overflow: hidden; }
+        body { background: skyblue; font-family: sans-serif; }
+        #game { position: relative; width: 100vw; height: 100vh; }
+        #player { position: absolute; bottom: 10px; left: 50px; width: 30px; height: 30px; background: red; }
+        #obstacle { position: absolute; bottom: 10px; right: -30px; width: 30px; height: 30px; background: black; }
+    </style>
+</head>
+<body>
+    <div id="game">
+        <div id="player"></div>
+        <div id="obstacle"></div>
+    </div>
+    <script>
+        let player = document.getElementById('player');
+        let obstacle = document.getElementById('obstacle');
+        let jumping = false;
+
+        document.addEventListener('keydown', e => {
+            if (e.key === ' ' && !jumping) {
+                jumping = true;
+                player.style.transition = 'bottom 1s';
+                player.style.bottom = '600px';
+                setTimeout(() => {
+                    player.style.bottom = '10px';
+                    setTimeout(() => jumping = false, 500);
+                }, 1000);
+            }
+        });
+
+        function moveObstacle() {
+            obstacle.style.right = '-30px';
+            setInterval(() => {
+                let pos = parseInt(obstacle.style.right) + 5;
+                obstacle.style.right = pos + 'px';
+                if (pos > window.innerWidth) obstacle.style.right = '-30px';
+
+                // Calculate positions
+                let playerBottom = parseInt(player.style.bottom);
+                let obstacleLeft = window.innerWidth - pos - 30; // Adjust for obstacle width
+                let playerLeft = 50;
+                let playerRight = playerLeft + 30; // Player width
+
+                // Check for collision on x-axis overlap and y-axis position
+                if (obstacleLeft < playerRight && obstacleLeft + 30 > playerLeft && playerBottom <= 40) {
+                    alert('Game Over!');
+                    location.reload();
+                }
+            }, 30);
+        }
+
+        moveObstacle();
+    </script>
+</body>
+</html>
