@@ -21,12 +21,119 @@
         let player = document.getElementById('player');
         let obstacle = document.getElementById('obstacle');
         let jumping = false;
+        let audioStarted = false;
+
+        // Initialize audio context and oscillator for sine wave sound
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        oscillator.type = 'sine';
+        oscillator.connect(audioContext.destination);
+
+        // Function to create a bass drum sound
+        function playBassDrum() {
+            const bassOscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            bassOscillator.type = 'sine';
+            bassOscillator.frequency.setValueAtTime(150, audioContext.currentTime);
+            gainNode.gain.setValueAtTime(1, audioContext.currentTime);
+
+            bassOscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            bassOscillator.start();
+            bassOscillator.frequency.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+
+            bassOscillator.stop(audioContext.currentTime + 0.1);
+        }
+
+        // Function to create a snare drum sound
+        function playSnareDrum() {
+            const bufferSize = audioContext.sampleRate;
+            const noiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+            const output = noiseBuffer.getChannelData(0);
+
+            for (let i = 0; i < bufferSize; i++) {
+                output[i] = Math.random() * 2 - 1; // White noise
+            }
+
+            const noise = audioContext.createBufferSource();
+            noise.buffer = noiseBuffer;
+
+            // Bandpass filter for snare tone
+            const noiseFilter = audioContext.createBiquadFilter();
+            noiseFilter.type = 'bandpass';
+            noiseFilter.frequency.setValueAtTime(3000, audioContext.currentTime);
+
+            const gainNode = audioContext.createGain();
+            gainNode.gain.setValueAtTime(1, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1); // Normal snare duration
+
+            noise.connect(noiseFilter);
+            noiseFilter.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            noise.start();
+            noise.stop(audioContext.currentTime + 0.1);
+            
+            // Play a second snare hit shortly after the first one
+            setTimeout(() => {
+                const noise2 = audioContext.createBufferSource();
+                noise2.buffer = noiseBuffer;
+
+                const noiseFilter2 = audioContext.createBiquadFilter();
+                noiseFilter2.type = 'bandpass';
+                noiseFilter2.frequency.setValueAtTime(3000, audioContext.currentTime);
+
+                const gainNode2 = audioContext.createGain();
+                gainNode2.gain.setValueAtTime(1, audioContext.currentTime);
+                gainNode2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+
+                noise2.connect(noiseFilter2);
+                noiseFilter2.connect(gainNode2);
+                gainNode2.connect(audioContext.destination);
+
+                noise2.start();
+                noise2.stop(audioContext.currentTime + 0.1);
+            }, 50); // Adjust timing for a tighter or looser roll
+        }
+
+
+
+        // Function to start the rhythm including snare
+        function startRhythm() {
+            setInterval(() => {
+                playBassDrum();
+                setTimeout(playSnareDrum, 250); // Snare hits in between bass drum beats
+            }, 500); // 120 BPM (500ms per beat)
+        }
+
+        // Function to change oscillator frequency randomly every 0.6 seconds
+        function changeFrequencyRandomly() {
+            const frequencies = [140, 280, 350, 210, 280, 350, 210];
+            setInterval(() => {
+                const randomFrequency = frequencies[Math.floor(Math.random() * frequencies.length)];
+                oscillator.frequency.setValueAtTime(randomFrequency, audioContext.currentTime);
+            }, Math.random() * (600 - 200) + 200);
+        }
 
         document.addEventListener('keydown', e => {
             if (e.key === ' ' && !jumping) {
                 jumping = true;
                 player.style.transition = 'bottom 1s';
                 player.style.bottom = '600px';
+
+                // Start the audio context on the first jump
+                if (!audioStarted) {
+                    audioContext.resume().then(() => {
+                        oscillator.start();
+                        startRhythm(); // Start the rhythm
+                        changeFrequencyRandomly(); // Start changing frequency
+                        audioStarted = true;
+                    });
+                }
+
                 setTimeout(() => {
                     player.style.bottom = '10px';
                     setTimeout(() => jumping = false, 500);
