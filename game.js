@@ -32,7 +32,7 @@ import { playBassDrum, playSnareDrum } from './sound.js';
             player.style.backgroundColor = getRandomColor();
             obstacle.style.backgroundColor = getRandomColor();
             game.style.backgroundColor = getRandomColor();
-        }, 10); // Change color every 50 milliseconds
+        }, 10); // Change color every 10 milliseconds
     }
 
     function getRandomColor() {
@@ -44,8 +44,8 @@ import { playBassDrum, playSnareDrum } from './sound.js';
         return color;
     }
 
-    document.addEventListener('keydown', e => {
-        if (e.key === ' ' && !jumping) {
+    function jump() {
+        if (!jumping) {
             jumping = true;
             player.style.transition = 'bottom 0.5s';
             player.style.bottom = '800px';
@@ -64,12 +64,8 @@ import { playBassDrum, playSnareDrum } from './sound.js';
                 player.style.bottom = '10px';
                 setTimeout(() => jumping = false, 500);
             }, 1000);
-        } else if (e.key === 'ArrowLeft') {
-            movePlayer(-10);
-        } else if (e.key === 'ArrowRight') {
-            movePlayer(10);
         }
-    });
+    }
 
     function movePlayer(distance) {
         let currentLeft = parseInt(player.style.left);
@@ -79,6 +75,30 @@ import { playBassDrum, playSnareDrum } from './sound.js';
             player.style.left = newLeft + 'px';
         }
     }
+
+    // Add touch event listeners
+    game.addEventListener('touchstart', e => {
+        const touchX = e.touches[0].clientX;
+        const gameWidth = game.offsetWidth;
+
+        if (touchX < gameWidth / 3) {
+            movePlayer(-10); // Move left
+        } else if (touchX > 2 * gameWidth / 3) {
+            movePlayer(10); // Move right
+        } else {
+            jump(); // Jump
+        }
+    });
+
+    document.addEventListener('keydown', e => {
+        if (e.key === ' ') {
+            jump();
+        } else if (e.key === 'ArrowLeft') {
+            movePlayer(-10);
+        } else if (e.key === 'ArrowRight') {
+            movePlayer(10);
+        }
+    });
 
     function moveObstacle() {
         obstacle.style.right = '-30px';
